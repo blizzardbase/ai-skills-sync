@@ -196,7 +196,7 @@ ai-skills-sync/
 No. The setup script never overwrites existing folders. If a skill folder already exists in a tool's directory, it is skipped.
 
 **What if I remove a skill from this repo?**
-The symlinks in your tool directories will become "broken" (point to nothing). The tools will ignore them. You can clean them up manually or re-run `setup.sh`.
+The symlinks in your tool directories will become "broken" (point to nothing). The tools will ignore them. To clean up broken symlinks, run `./setup.sh --prune`.
 
 **Can I have tool-specific skills that aren't synced?**
 Yes. Just put them directly in the tool's skills folder (not as symlinks). The setup script will see the real folder and skip it.

@@ -3,10 +3,13 @@
 # Reads tool paths from config.yaml. Safe to run multiple times.
 # Never deletes or overwrites existing skills.
 # Usage: ./setup.sh
+# Usage: ./setup.sh --prune   (also remove broken symlinks)
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SKILLS_DIR="$SCRIPT_DIR/skills"
 CONFIG_FILE="$SCRIPT_DIR/config.yaml"
+PRUNE_MODE=false
+[ "$1" = "--prune" ] && PRUNE_MODE=true
 
 echo ""
 echo "AI Skills Setup"
@@ -22,7 +25,7 @@ fi
 
 # Check config exists
 if [ ! -f "$CONFIG_FILE" ]; then
-    echo "Error: config.yaml not found. Copy config.yaml.example and edit it."
+    echo "Error: config.yaml not found. Create one based on the template in README.md."
     exit 1
 fi
 
@@ -99,6 +102,12 @@ for skill_dir in "$SKILLS_DIR"/*/; do
     # Skip template/internal folders (prefixed with _)
     [[ "$skill_name" == _* ]] && continue
 
+    # Skip folders without SKILL.md
+    if [ ! -f "$skill_dir/SKILL.md" ]; then
+        echo "  SKIP: $skill_name (no SKILL.md found, not a valid skill)"
+        continue
+    fi
+
     for i in "${!TARGETS[@]}"; do
         target_dir="${TARGETS[$i]}"
         tool_name="${TOOL_NAMES[$i]}"
@@ -141,10 +150,33 @@ for skill_dir in "$SKILLS_DIR"/*/; do
     done
 done
 
+# Prune broken symlinks if requested
+pruned=0
+if [ "$PRUNE_MODE" = true ]; then
+    for i in "${!TARGETS[@]}"; do
+        target_dir="${TARGETS[$i]}"
+        tool_name="${TOOL_NAMES[$i]}"
+        [ -d "$target_dir" ] || continue
+        for link in "$target_dir"/*/; do
+            link="${link%/}"
+            [ -L "$link" ] || continue
+            if [ ! -e "$link" ]; then
+                link_name=$(basename "$link")
+                rm "$link"
+                echo "  PRUNED: $link_name from $tool_name (broken symlink)"
+                pruned=$((pruned + 1))
+            fi
+        done
+    done
+fi
+
 echo ""
 echo "Done!"
 echo "  Linked: $linked"
 echo "  Skipped: $skipped (already exist)"
+if [ $pruned -gt 0 ]; then
+    echo "  Pruned: $pruned (broken symlinks removed)"
+fi
 if [ $errors -gt 0 ]; then
     echo "  Errors: $errors"
 fi

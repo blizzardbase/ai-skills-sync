@@ -16,9 +16,10 @@ SKILL_NAME="$1"
 DESCRIPTION="${2:-A new skill.}"
 SKILL_DIR="$SKILLS_DIR/$SKILL_NAME"
 
-# Prevent _ prefix (reserved for templates)
-if [[ "$SKILL_NAME" == _* ]]; then
-    echo "Error: Skill names starting with _ are reserved for templates."
+# Validate skill name: lowercase letters, numbers, and hyphens only
+if [[ ! "$SKILL_NAME" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
+    echo "Error: Skill name must use only lowercase letters, numbers, and hyphens."
+    echo "Example: code-review, git-safety, my-skill-1"
     exit 1
 fi
 
@@ -30,10 +31,16 @@ fi
 
 # Create skill folder and SKILL.md
 mkdir -p "$SKILL_DIR"
+# Escape description for safe YAML (wrap in quotes if it contains special chars)
+SAFE_DESC="$DESCRIPTION"
+if echo "$DESCRIPTION" | grep -qE '[:"{}[\]|>&*!%@#]'; then
+    SAFE_DESC="\"$(echo "$DESCRIPTION" | sed 's/"/\\"/g')\""
+fi
+
 cat > "$SKILL_DIR/SKILL.md" << EOF
 ---
 name: $SKILL_NAME
-description: $DESCRIPTION
+description: $SAFE_DESC
 ---
 
 # $SKILL_NAME
