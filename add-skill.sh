@@ -31,16 +31,13 @@ fi
 
 # Create skill folder and SKILL.md
 mkdir -p "$SKILL_DIR"
-# Escape description for safe YAML (wrap in quotes if it contains special chars)
-SAFE_DESC="$DESCRIPTION"
-if echo "$DESCRIPTION" | grep -qE '[:"{}[\]|>&*!%@#]'; then
-    SAFE_DESC="\"$(echo "$DESCRIPTION" | sed 's/"/\\"/g')\""
-fi
+# Always quote description for safe YAML (handles colons, special chars, etc.)
+SAFE_DESC=$(echo "$DESCRIPTION" | sed 's/"/\\"/g')
 
 cat > "$SKILL_DIR/SKILL.md" << EOF
 ---
 name: $SKILL_NAME
-description: $SAFE_DESC
+description: "$SAFE_DESC"
 ---
 
 # $SKILL_NAME

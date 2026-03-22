@@ -157,16 +157,13 @@ if [ "$PRUNE_MODE" = true ]; then
         target_dir="${TARGETS[$i]}"
         tool_name="${TOOL_NAMES[$i]}"
         [ -d "$target_dir" ] || continue
-        for link in "$target_dir"/*/; do
-            link="${link%/}"
-            [ -L "$link" ] || continue
-            if [ ! -e "$link" ]; then
-                link_name=$(basename "$link")
-                rm "$link"
-                echo "  PRUNED: $link_name from $tool_name (broken symlink)"
-                pruned=$((pruned + 1))
-            fi
-        done
+        while IFS= read -r link; do
+            [ -z "$link" ] && continue
+            link_name=$(basename "$link")
+            rm "$link"
+            echo "  PRUNED: $link_name from $tool_name (broken symlink)"
+            pruned=$((pruned + 1))
+        done < <(find "$target_dir" -maxdepth 1 -type l ! -exec test -e {} \; -print)
     done
 fi
 
