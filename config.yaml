@@ -1,0 +1,30 @@
+# AI Skills Sync - Tool Configuration
+#
+# Enable the tools you use and set their skills directory path.
+# Paths support ~ for your home directory.
+#
+# After editing, run: ./setup.sh
+
+tools:
+  claude-code:
+    enabled: true
+    path: ~/.claude/skills
+
+  cursor:
+    enabled: true
+    path: ~/.cursor/skills
+
+  codex:
+    enabled: false
+    path: ~/.codex/skills
+
+  openclaw:
+    enabled: false
+    path: ~/clawd/skills
+
+  # Add more tools here. Any tool that uses the
+  # skills/skill-name/SKILL.md format will work.
+  #
+  # example:
+  #   enabled: false
+  #   path: ~/.example/skills
