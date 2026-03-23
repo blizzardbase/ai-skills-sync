@@ -39,6 +39,8 @@ current_enabled=""
 current_path=""
 
 while IFS= read -r line; do
+    # Skip comment lines
+    [[ "$line" =~ ^[[:space:]]*# ]] && continue
     # Match tool name (indented, ends with colon, under tools:)
     if echo "$line" | grep -qE '^  [a-z].*:$'; then
         # Save previous tool if it was enabled
