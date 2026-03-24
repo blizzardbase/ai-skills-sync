@@ -1,19 +1,20 @@
 #!/bin/bash
 # add-skill.sh - Create a new skill and symlink it to all enabled tools
-# Usage: ./add-skill.sh <skill-name> "<description>"
-# Example: ./add-skill.sh code-review "Review code for quality and security issues"
+# Usage: ./add-skill.sh <skill-name> "<description>" [tags]
+# Example: ./add-skill.sh code-review "Review code for quality and security issues" "coding,security"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SKILLS_DIR="$SCRIPT_DIR/skills"
 
 if [ $# -lt 1 ]; then
-    echo "Usage: add-skill.sh <skill-name> [description]"
-    echo "Example: add-skill.sh code-review \"Review code for quality and security\""
+    echo "Usage: add-skill.sh <skill-name> [description] [tags]"
+    echo "Example: add-skill.sh code-review \"Review code for quality and security\" \"coding,security\""
     exit 1
 fi
 
 SKILL_NAME="$1"
 DESCRIPTION="${2:-A new skill.}"
+TAGS="${3:-}"
 SKILL_DIR="$SKILLS_DIR/$SKILL_NAME"
 
 # Validate skill name: lowercase letters, numbers, and hyphens only
@@ -34,11 +35,21 @@ mkdir -p "$SKILL_DIR"
 # Always quote description for safe YAML (handles colons, special chars, etc.)
 SAFE_DESC=$(echo "$DESCRIPTION" | sed 's/"/\\"/g')
 
-cat > "$SKILL_DIR/SKILL.md" << EOF
----
+# Build frontmatter
+FRONTMATTER="---
 name: $SKILL_NAME
-description: "$SAFE_DESC"
----
+description: \"$SAFE_DESC\""
+
+if [ -n "$TAGS" ]; then
+    FRONTMATTER="$FRONTMATTER
+tags: $TAGS"
+fi
+
+FRONTMATTER="$FRONTMATTER
+---"
+
+cat > "$SKILL_DIR/SKILL.md" << EOF
+$FRONTMATTER
 
 # $SKILL_NAME
 

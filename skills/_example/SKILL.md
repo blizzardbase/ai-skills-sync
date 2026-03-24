@@ -1,11 +1,20 @@
 ---
 name: _example
 description: Template skill. Copy this folder to create a new skill, or use add-skill.sh.
+tags: coding, template
+tools: claude-code, cursor, codex, openclaw
 ---
 
 # Example Skill
 
 This is a template. It is not linked to any tool (the underscore prefix tells setup.sh to skip it).
+
+## Frontmatter Fields
+
+- **name**: Skill identifier (lowercase, hyphens allowed)
+- **description**: One-line summary of what the skill does
+- **tags**: Comma-separated categories (optional). Use `./list-skills.sh <tag>` to filter.
+- **tools**: Comma-separated list of tools to sync to (optional). If omitted, syncs to all enabled tools.
 
 ## When to Use
 

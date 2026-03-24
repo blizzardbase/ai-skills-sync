@@ -4,12 +4,18 @@
 # Never deletes or overwrites existing skills.
 # Usage: ./setup.sh
 # Usage: ./setup.sh --prune   (also remove broken symlinks)
+# Usage: ./setup.sh --dry-run (preview without making changes)
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SKILLS_DIR="$SCRIPT_DIR/skills"
 CONFIG_FILE="$SCRIPT_DIR/config.yaml"
 PRUNE_MODE=false
-[ "$1" = "--prune" ] && PRUNE_MODE=true
+DRY_RUN=false
+
+for arg in "$@"; do
+    [ "$arg" = "--prune" ] && PRUNE_MODE=true
+    [ "$arg" = "--dry-run" ] && DRY_RUN=true
+done
 
 echo ""
 echo "AI Skills Setup"
@@ -77,6 +83,11 @@ if [ ${#TARGETS[@]} -eq 0 ]; then
     exit 1
 fi
 
+if [ "$DRY_RUN" = true ]; then
+    echo "DRY RUN MODE - No changes will be made"
+    echo ""
+fi
+
 echo "Enabled tools:"
 for i in "${!TOOL_NAMES[@]}"; do
     echo "  - ${TOOL_NAMES[$i]} (${TARGETS[$i]})"
@@ -92,6 +103,14 @@ for d in "$SKILLS_DIR"/*/; do
 done
 echo "Found $skill_count skills to sync"
 echo ""
+
+# Function to get allowed tools from SKILL.md
+get_allowed_tools() {
+    local skill_path="$1"
+    if [ -f "$skill_path/SKILL.md" ]; then
+        sed -n 's/^tools: *//p' "$skill_path/SKILL.md" | head -1
+    fi
+}
 
 linked=0
 skipped=0
@@ -110,15 +129,31 @@ for skill_dir in "$SKILLS_DIR"/*/; do
         continue
     fi
 
+    # Get allowed tools for this skill (selective sync)
+    allowed_tools=$(get_allowed_tools "$skill_dir")
+
     for i in "${!TARGETS[@]}"; do
         target_dir="${TARGETS[$i]}"
         tool_name="${TOOL_NAMES[$i]}"
+
+        # Selective sync: if tools field specified, only link to those tools
+        if [ -n "$allowed_tools" ]; then
+            if ! echo ",$allowed_tools," | tr -d ' ' | grep -q ",$tool_name,"; then
+                [ "$DRY_RUN" = true ] && echo "  SKIP: $skill_name → $tool_name (not in tools list)"
+                continue
+            fi
+        fi
+
         dest="$target_dir/$skill_name"
 
         # Create target directory if it doesn't exist
         if [ ! -d "$target_dir" ]; then
-            mkdir -p "$target_dir"
-            echo "  Created: $target_dir"
+            if [ "$DRY_RUN" = false ]; then
+                mkdir -p "$target_dir"
+                echo "  Created: $target_dir"
+            else
+                echo "  WOULD CREATE: $target_dir"
+            fi
         fi
 
         # If symlink already points to the right place, skip silently
@@ -128,7 +163,7 @@ for skill_dir in "$SKILLS_DIR"/*/; do
                 skipped=$((skipped + 1))
                 continue
             else
-                echo "  SKIP: $skill_name in $tool_name (symlink exists pointing elsewhere)"
+                [ "$DRY_RUN" = true ] && echo "  SKIP: $skill_name in $tool_name (symlink exists pointing elsewhere)"
                 skipped=$((skipped + 1))
                 continue
             fi
@@ -136,13 +171,16 @@ for skill_dir in "$SKILLS_DIR"/*/; do
 
         # If real folder exists, never touch it
         if [ -d "$dest" ]; then
-            echo "  SKIP: $skill_name in $tool_name (real folder exists, not overwriting)"
+            [ "$DRY_RUN" = true ] && echo "  SKIP: $skill_name in $tool_name (real folder exists)"
             skipped=$((skipped + 1))
             continue
         fi
 
         # Create symlink
-        if ln -s "${skill_dir%/}" "$dest" 2>/dev/null; then
+        if [ "$DRY_RUN" = true ]; then
+            echo "  WOULD LINK: $skill_name → $tool_name"
+            linked=$((linked + 1))
+        elif ln -s "${skill_dir%/}" "$dest" 2>/dev/null; then
             echo "  OK: $skill_name → $tool_name"
             linked=$((linked + 1))
         else
@@ -162,8 +200,12 @@ if [ "$PRUNE_MODE" = true ]; then
         while IFS= read -r link; do
             [ -z "$link" ] && continue
             link_name=$(basename "$link")
-            rm "$link"
-            echo "  PRUNED: $link_name from $tool_name (broken symlink)"
+            if [ "$DRY_RUN" = true ]; then
+                echo "  WOULD PRUNE: $link_name from $tool_name (broken symlink)"
+            else
+                rm "$link"
+                echo "  PRUNED: $link_name from $tool_name (broken symlink)"
+            fi
             pruned=$((pruned + 1))
         done < <(find "$target_dir" -maxdepth 1 -type l ! -exec test -e {} \; -print)
     done

@@ -124,13 +124,81 @@ You should see symlinks pointing back to this repo.
 ## Adding a New Skill
 
 ```bash
-./add-skill.sh my-skill-name "Short description of what it does"
+./add-skill.sh my-skill-name "Short description of what it does" "coding,security"
 ```
 
 This will:
 1. Create `skills/my-skill-name/SKILL.md` with a template
 2. Symlink it to all your enabled tools
 3. You then edit the `SKILL.md` to add your actual instructions
+
+The optional third argument adds tags for filtering.
+
+## Managing Skills
+
+### List all skills
+
+```bash
+./list-skills.sh
+./list-skills.sh coding        # filter by tag
+./list-skills.sh --json        # JSON output
+```
+
+### Check health
+
+```bash
+./status.sh
+```
+
+Shows enabled tools, skill count, symlinks, and any broken links.
+
+### Remove a skill
+
+```bash
+./remove-skill.sh my-skill-name
+```
+
+Removes the skill folder and cleans up symlinks from all tools.
+
+### Import a skill
+
+```bash
+./import-skill.sh ~/path/to/skill          # local folder
+./import-skill.sh https://raw.githubusercontent.com/user/repo/main/skills/code-review/SKILL.md code-review
+```
+
+### Dry run
+
+```bash
+./setup.sh --dry-run
+```
+
+Preview what setup would do without making changes.
+
+## Selective Sync
+
+By default, each skill syncs to all enabled tools. To restrict a skill to specific tools, add a `tools` field in the skill's frontmatter:
+
+```yaml
+---
+name: cursor-only-skill
+description: Something for Cursor only
+tools: cursor
+---
+```
+
+The skill will only be linked to Cursor, even if Claude Code is enabled in config.yaml.
+
+## SKILL.md Frontmatter
+
+```yaml
+---
+name: my-skill
+description: What this skill does in one sentence
+tags: coding, security        # optional: for filtering
+tools: claude-code, cursor    # optional: restrict which tools get this skill
+---
+```
 
 ## Multi-Machine Workflow
 
@@ -184,6 +252,10 @@ ai-skills-sync/
 ├── config.yaml        ← Which tools you use and their paths
 ├── setup.sh           ← Creates symlinks to all tools
 ├── add-skill.sh       ← Scaffolds a new skill + symlinks it
+├── remove-skill.sh    ← Removes a skill and cleans symlinks
+├── list-skills.sh     ← Lists all skills with descriptions
+├── status.sh         ← Shows health check
+├── import-skill.sh   ← Imports skill from path or URL
 ├── .gitignore
 └── skills/
     └── _example/      ← Template skill (not linked to tools)
