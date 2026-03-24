@@ -9,8 +9,10 @@ SKILLS_DIR="$SCRIPT_DIR/skills"
 JSON_OUTPUT=false
 FILTER_TAG=""
 
-[ "$1" = "--json" ] && JSON_OUTPUT=true
-[ -n "$1" ] && [ "$1" != "--json" ] && FILTER_TAG="$1"
+for arg in "$@"; do
+    [ "$arg" = "--json" ] && JSON_OUTPUT=true
+    [ "$arg" != "--json" ] && FILTER_TAG="$arg"
+done
 
 if [ -d "$SKILLS_DIR" ]; then
     :
